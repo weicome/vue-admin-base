@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.title" placeholder="Title" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
+      <el-input v-model="listQuery.username" placeholder="Title" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-button class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
         搜索
       </el-button>
@@ -9,7 +9,7 @@
         添加
       </el-button>
     </div>
-
+    <br>
     <el-table
       :key="tableKey"
       v-loading="listLoading"
@@ -18,7 +18,6 @@
       fit
       highlight-current-row
       style="width: 100%;"
-      @sort-change="sortChange"
     >
       <el-table-column label="ID" width="50" prop="id" sortable="custom" align="center" :class-name="getSortClass('id')">
         <template slot-scope="{row}">
@@ -112,10 +111,8 @@
           <el-input v-model="temp.email" />
         </el-form-item>
         <el-form-item label="状态">
-          <!-- <div style="margin-top: 20px"> -->
           <el-radio v-model="temp.status" label="0" border size="medium">禁用</el-radio>
           <el-radio v-model="temp.status" label="1" border size="medium">启用</el-radio>
-          <!-- </div> -->
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -163,11 +160,12 @@ export default {
       temp: {
         id: undefined,
         avatar: '',
+        role_id: [],
         username: '',
         nickname: '',
         mobile: '',
         emial: '',
-        status: 0,
+        status: '0',
         timestamp: new Date()
       },
       dialogFormVisible: false,
@@ -179,7 +177,7 @@ export default {
       dialogPvVisible: true,
       pvData: [],
       rules: {
-        username: [{ required: true, message: '用户名是必须的', trigger: 'change' }],
+        username: [{ required: true, message: '用户名是必须的', trigger: 'blur' }],
         nickname: [{ required: true, message: '昵称是必须的', trigger: 'change' }],
         password: [{ required: true, message: '密码是必须的', trigger: 'change' }]
       }
@@ -192,11 +190,12 @@ export default {
     getList() {
       this.listLoading = true
       admin.getList(this.listQuery).then(res => {
-        console.log(res.data)
         this.list = res.data
+        this.total = res.total
+        this.listQuery.page = res.current_page
         this.listLoading = false
       }).catch(err => {
-        this.$message.error(err)
+        this.$message.error(err.message)
         setTimeout(() => {
           this.listLoading = false
         }, 2000)
@@ -206,36 +205,16 @@ export default {
       this.listQuery.page = 1
       this.getList()
     },
-    handleModifyStatus(row, status) {
-      this.$message({
-        message: '操作Success',
-        type: 'success'
-      })
-      row.status = status
-    },
-    sortChange(data) {
-      const { prop, order } = data
-      if (prop === 'id') {
-        this.sortByID(order)
-      }
-    },
-    sortByID(order) {
-      if (order === 'ascending') {
-        this.listQuery.sort = '+id'
-      } else {
-        this.listQuery.sort = '-id'
-      }
-      this.handleFilter()
-    },
     resetTemp() {
       this.temp = {
         id: undefined,
-        importance: 1,
-        remark: '',
-        timestamp: new Date(),
-        title: '',
-        status: 'published',
-        type: ''
+        avatar: '',
+        role_id: [],
+        username: '',
+        nickname: '',
+        mobile: '',
+        emial: '',
+        status: '1'
       }
     },
     handleCreate() {
@@ -249,8 +228,16 @@ export default {
     createData() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
+          admin.addAdmin(this.temp).then(res => {
+            console.log(res)
+            this.dialogFormVisible = false
+            this.getList()
+          }).catch((err) => {
+            this.$message.error(err.message)
+            setTimeout(() => {
+              this.listLoading = false
+            }, 2000)
+          })
         }
       })
     },
@@ -266,19 +253,34 @@ export default {
     updateData() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
+          admin.upAdmin(this.temp).then(res => {
+            console.log(res)
+            this.dialogFormVisible = false
+            this.getList()
+          }).catch((err) => {
+            this.$message.error(err.message)
+            setTimeout(() => {
+              this.listLoading = false
+            }, 2000)
+          })
         }
       })
     },
     handleDelete(row, index) {
-      this.$notify({
-        title: 'Success',
-        message: 'Delete Successfully',
-        type: 'success',
-        duration: 2000
+      admin.delAdmin(row.id).then(res => {
+        this.$notify({
+          title: 'Success',
+          message: 'Delete Successfully',
+          type: 'success',
+          duration: 2000
+        })
+        this.list.splice(index, 1)
+      }).catch(err => {
+        console.log(err)
+        setTimeout(() => {
+          this.$message.error(err.message[0])
+        }, 2000)
       })
-      this.list.splice(index, 1)
     },
 
     getSortClass: function(key) {

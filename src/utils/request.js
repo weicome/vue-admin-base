@@ -20,6 +20,7 @@ service.interceptors.request.use(
       // please modify it according to the actual situation
       config.headers['Authorization'] = `Bearer ${store.getters.token}`
     }
+    console.log(config)
     return config
   },
   error => {
@@ -71,13 +72,14 @@ service.interceptors.response.use(
     // })
   },
   error => {
-    console.log('err' + error) // for debug
-    Message({
-      message: error.message,
-      type: 'error',
-      duration: 5 * 1000
-    })
-    return Promise.reject(error)
+    console.log('err' + error)// for debug
+    // Message({
+    //   message: error.message || 'Error',
+    //   type: 'error',
+    //   duration: 5 * 1000
+    // })
+    const data = error.response.data
+    return Promise.reject(data)
   }
 )
 

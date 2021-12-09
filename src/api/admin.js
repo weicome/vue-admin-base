@@ -1,13 +1,15 @@
 import request from '@/utils/request'
 
-export function getList() {
+export function getList(query) {
   return request({
     url: '/admin',
-    method: 'get'
+    method: 'get',
+    param: query
   })
 }
 
 export function addAdmin(data) {
+  console.log(data)
   return request({
     url: '/admin',
     method: 'post',
@@ -22,8 +24,15 @@ export function upAdmin(data) {
     data
   })
 }
+export function delAdmin(id) {
+  return request({
+    url: '/admin/' + id,
+    method: 'delete'
+  })
+}
 export default {
   getList,
   addAdmin,
-  upAdmin
+  upAdmin,
+  delAdmin
 }
